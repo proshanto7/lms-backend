@@ -70,6 +70,12 @@ export const getCategoryBySlug = asyncHandler(async (req, res) => {
 export const updateCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  const hasBodyFields = Object.keys(req.body).length > 0;
+
+  if (!hasBodyFields && !req.file) {
+    throw new AppError("At least one field or an image is required to update", 400);
+  }
+
   const updates = { ...req.body };
 
   if (req.file) {
@@ -84,7 +90,6 @@ export const updateCategory = asyncHandler(async (req, res) => {
 
   return apiResponse(res, 200, "Category updated successfully", { category });
 });
-
 /**
  * @route   DELETE /api/v1/categories/:id
  * @access  Private (authorize + authorizeRole('admin'))

@@ -22,7 +22,7 @@ export const updateCategorySchema = Joi.object({
     "string.pattern.base": "Color must be a valid hex code, e.g. #7c6fe8",
   }),
 })
-  .min(1)
-  .messages({
-    "object.min": "At least one field is required to update",
-  });
+  // .min(1)
+  // .messages({
+  //   "object.min": "At least one field is required to update",
+  // });
