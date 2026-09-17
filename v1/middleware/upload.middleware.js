@@ -1,12 +1,20 @@
 import multer from "multer";
 
 function UploadMiddleware(allowedExtensions, maxFileSizeMB) {
-  // memory storage — file buffer thake, disk-e save hoy na
   const storage = multer.memoryStorage();
 
   const fileFilter = (req, file, cb) => {
     const subtype = file.mimetype.split("/")[1];
-    const extension = subtype === "svg+xml" ? "svg" : subtype;
+
+    let extension = subtype;
+
+    if (subtype === "svg+xml") {
+      extension = "svg";
+    }
+
+    if (subtype === "jpeg") {
+      extension = "jpg";
+    }
 
     if (allowedExtensions.includes(extension)) {
       cb(null, true);
@@ -23,7 +31,9 @@ function UploadMiddleware(allowedExtensions, maxFileSizeMB) {
   return multer({
     storage,
     fileFilter,
-    limits: { fileSize: maxFileSizeMB * 1024 * 1024 },
+    limits: {
+      fileSize: maxFileSizeMB * 1024 * 1024,
+    },
   });
 }
 
