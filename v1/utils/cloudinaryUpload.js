@@ -1,5 +1,5 @@
 import streamifier from "streamifier";
-import cloudinary from "../config/cloudinary.js";
+import cloudinary from "../../config/cloudinary.js";
 
 /**
  * Upload a file buffer (from multer memoryStorage) to Cloudinary
