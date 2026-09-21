@@ -51,3 +51,15 @@ export const getMyEnrollments = asyncHandler(async (req, res) => {
 
   return apiResponse(res, 200, "Your enrollments fetched successfully", { enrollments });
 });
+
+/**
+ * @route   GET /api/v1/enrollment/student/:studentId
+ * @access  Private (admin)
+ */
+export const getStudentEnrollments = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
+
+  const enrollments = await enrollmentService.getStudentEnrollments(studentId);
+
+  return apiResponse(res, 200, "Student enrollments fetched successfully", { enrollments });
+});

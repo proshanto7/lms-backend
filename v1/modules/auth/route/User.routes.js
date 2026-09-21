@@ -3,6 +3,9 @@ import express from "express";
 import * as userController
   from "../controller/user.controller.js";
 
+import UploadMiddleware
+  from "../../../middleware/upload.middleware.js";
+
 import { authorize }
   from "../../../middleware/authorize.js";
 
@@ -23,10 +26,19 @@ import {
   verifyEmailSchema,
   resendVerificationSchema,
   verifyResetOtpSchema,
+  createUserSchema,          // 🆕 admin: user create
+  updateUserByAdminSchema,   // 🆕 admin: user edit
 } from "../validation/user.validation.js";
 
 
 const router = express.Router();
+
+
+// =========================================
+// 🆕 Avatar Upload (category icon er moto: UploadMiddleware → Cloudinary)
+// =========================================
+
+const uploadAvatar = UploadMiddleware(["jpg", "png", "webp"], 2).single("avatar");
 
 
 // =========================================
@@ -137,6 +149,8 @@ router.delete(
 // =========================================
 // ADMIN ROUTES
 // =========================================
+// NOTE: "/:id" wala route gula shobar niche thakte hobe,
+// na hole "/me" ke "/:id" hishebe dhore felbe.
 
 router.get(
   "/",
@@ -152,6 +166,38 @@ router.patch(
   authorizeRole("admin"),
   validate(updateRoleSchema),
   userController.updateUserRole
+);
+
+
+// 🆕 Admin: notun user (mentor) create + optional avatar image
+// uploadAvatar ageh thakte hobe, tahole validate() req.body dekhte pay
+router.post(
+  "/",
+  authorize,
+  authorizeRole("admin"),
+  uploadAvatar,
+  validate(createUserSchema),
+  userController.createUser
+);
+
+
+// 🆕 Admin: user edit (name, email, optional password, optional avatar image)
+router.patch(
+  "/:id",
+  authorize,
+  authorizeRole("admin"),
+  uploadAvatar,
+  validate(updateUserByAdminSchema),
+  userController.updateUser
+);
+
+
+// 🆕 Admin: mentor delete
+router.delete(
+  "/:id",
+  authorize,
+  authorizeRole("admin"),
+  userController.deleteUser
 );
 
 

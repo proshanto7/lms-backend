@@ -96,3 +96,14 @@ export const hasActiveAccess = async (studentId, courseId) => {
   });
   return Boolean(enrollment);
 };
+
+/**
+ * Get all active enrollments for a specific student (admin view)
+ */
+export const getStudentEnrollments = async (studentId) => {
+  const enrollments = await Enrollment.find({ student: studentId, status: "active" })
+    .populate("course", "title slug price isFree image")
+    .sort({ createdAt: -1 });
+
+  return enrollments;
+};

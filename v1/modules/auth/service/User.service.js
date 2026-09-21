@@ -1,8 +1,10 @@
 import crypto from "crypto";
 
 import User from "../model/user.model.js";
+import Course from "../../courses/model/courses.model.js";
 import AppError from "../../../utils/appError.js";
 import { sendEmail } from "../../../helpers/sendEmail.js";
+import { deleteFromCloudinary } from "../../../utils/cloudinaryUpload.js";
 
 // =========================================
 // OTP Configuration
@@ -443,4 +445,178 @@ export const updateUserRole = async (userId, role) => {
   }
 
   return user;
+};
+
+// =========================================================
+// 🆕 ADMIN: CREATE / UPDATE / DELETE USER (mentor)
+// =========================================================
+
+// Response e password / avatarPublicId jate leak na hoy
+const sanitizeUser = (user) => {
+  const safeUser = user.toObject();
+
+  delete safeUser.password;
+  delete safeUser.avatarPublicId;
+
+  return safeUser;
+};
+
+// Upload hoye jawa image rollback (error hole)
+const removeUploadedImage = async (publicId) => {
+  if (publicId) {
+    await deleteFromCloudinary(publicId);
+  }
+};
+
+// =========================================
+// Admin: Create User
+// avatar = { url, publicId } Cloudinary theke controller e set hoy
+// =========================================
+
+export const createUserByAdmin = async ({
+  name,
+  email,
+  password,
+  phone,
+  role,
+  avatar,
+  avatarPublicId,
+}) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existingUser = await User.findOne({
+    email: normalizedEmail,
+  });
+
+  if (existingUser) {
+    await removeUploadedImage(avatarPublicId); // rollback uploaded image
+    throw new AppError("Email is already registered", 409);
+  }
+
+  // Password model er pre("save") hook e hash hoy.
+  // Admin create korle OTP lagbe na, tai isVerified: true
+  let user;
+
+  try {
+    user = await User.create({
+      name,
+      email: normalizedEmail,
+      password,
+      phone,
+      role,
+      avatar,
+      avatarPublicId,
+      isVerified: true,
+    });
+  } catch (err) {
+    await removeUploadedImage(avatarPublicId); // create fail hole upload kora image muche felo
+    throw err;
+  }
+
+  return sanitizeUser(user);
+};
+
+// =========================================
+// Admin: Update User
+// notun avatar upload hole purano Cloudinary image muche dey
+// =========================================
+
+export const updateUserByAdmin = async (userId, updates) => {
+  const allowedFields = [
+    "name",
+    "email",
+    "password",
+    "phone",
+    "avatar",
+    "avatarPublicId",
+  ];
+
+  const filteredUpdates = {};
+
+  Object.keys(updates).forEach((key) => {
+    if (allowedFields.includes(key)) {
+      filteredUpdates[key] = updates[key];
+    }
+  });
+
+  if (filteredUpdates.email) {
+    filteredUpdates.email = filteredUpdates.email.trim().toLowerCase();
+
+    const duplicate = await User.findOne({
+      email: filteredUpdates.email,
+      _id: { $ne: userId },
+    });
+
+    if (duplicate) {
+      await removeUploadedImage(filteredUpdates.avatarPublicId);
+      throw new AppError("Email is already registered", 409);
+    }
+  }
+
+  const user = await User.findById(userId).select("+avatarPublicId");
+
+  if (!user) {
+    await removeUploadedImage(filteredUpdates.avatarPublicId);
+    throw new AppError("User not found", 404);
+  }
+
+  const oldAvatarPublicId = user.avatarPublicId;
+
+  // save() use korchi, tai password thakle pre("save") hook hash korbe
+  Object.assign(user, filteredUpdates);
+
+  try {
+    await user.save();
+  } catch (err) {
+    await removeUploadedImage(filteredUpdates.avatarPublicId);
+    throw err;
+  }
+
+  // Save successful hole tarpor purano image delete
+  if (filteredUpdates.avatarPublicId && oldAvatarPublicId) {
+    await removeUploadedImage(oldAvatarPublicId);
+  }
+
+  return sanitizeUser(user);
+};
+
+// =========================================
+// Admin: Delete User
+// Shudhu mentor delete kora jay (student er enrollment/progress data thake).
+// Mentor kono course er instructor hole delete block hobe.
+// =========================================
+
+export const deleteUserByAdmin = async (userId) => {
+  const user = await User.findById(userId).select("+avatarPublicId");
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (user.role !== "mentor") {
+    throw new AppError("Only mentor accounts can be deleted from here", 403);
+  }
+
+  // Course model e instructor field er nam instructorId ba instructor
+  // je-i hok, ei line kaj korbe
+  const instructorField = Course.schema.path("instructorId")
+    ? "instructorId"
+    : "instructor";
+
+  const courseCount = await Course.countDocuments({
+    [instructorField]: user._id,
+  });
+
+  if (courseCount > 0) {
+    throw new AppError(
+      `Cannot delete mentor: ${courseCount} course(s) still assigned to them`,
+      409,
+    );
+  }
+
+  await user.deleteOne();
+
+  await removeUploadedImage(user.avatarPublicId);
+
+  return true;
 };

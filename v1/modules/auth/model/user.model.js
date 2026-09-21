@@ -40,6 +40,13 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    // 🆕 Cloudinary public id (avatar replace/delete korar somoy purano image muchte lage)
+    avatarPublicId: {
+      type: String,
+      default: "",
+      select: false,
+    },
+
     role: {
       type: String,
       enum: [

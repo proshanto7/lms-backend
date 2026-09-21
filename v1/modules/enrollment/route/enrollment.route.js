@@ -26,6 +26,12 @@ router.get(
   authorizeRole("admin"),
   enrollmentController.getCourseEnrollments,
 );
+router.get(
+  "/student/:studentId",
+  authorize,
+  authorizeRole("admin"),
+  enrollmentController.getStudentEnrollments,
+);
 router.get("/my", authorize, enrollmentController.getMyEnrollments);
 
 export default router;

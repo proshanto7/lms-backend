@@ -326,3 +326,132 @@ export const updateRoleSchema =
           "Role must be one of: student, mentor, admin",
       }),
   });
+
+
+// =========================================
+// ADMIN: CREATE USER (mentor / student)
+// =========================================
+
+export const createUserSchema =
+  Joi.object({
+    name: Joi.string()
+      .trim()
+      .max(100)
+      .required()
+      .messages({
+        "string.empty":
+          "Name is required",
+
+        "any.required":
+          "Name is required",
+
+        "string.max":
+          "Name cannot exceed 100 characters",
+      }),
+
+    email: Joi.string()
+      .trim()
+      .lowercase()
+      .email()
+      .required()
+      .messages({
+        "string.empty":
+          "Email is required",
+
+        "any.required":
+          "Email is required",
+
+        "string.email":
+          "Please enter a valid email",
+      }),
+
+    password: Joi.string()
+      .min(8)
+      .required()
+      .messages({
+        "string.empty":
+          "Password is required",
+
+        "any.required":
+          "Password is required",
+
+        "string.min":
+          "Password must be at least 8 characters",
+      }),
+
+    role: Joi.string()
+      .valid(
+        "student",
+        "mentor",
+        "admin"
+      )
+      .required()
+      .messages({
+        "any.required":
+          "Role is required",
+
+        "any.only":
+          "Role must be one of: student, mentor, admin",
+      }),
+
+    phone: Joi.string()
+      .trim()
+      .optional()
+      .allow(""),
+
+    avatar: Joi.string()
+      .uri()
+      .optional()
+      .allow(""),
+  });
+
+
+// =========================================
+// ADMIN: UPDATE USER
+// (role change er jonno alada route ache: PATCH /:id/role)
+// =========================================
+
+export const updateUserByAdminSchema =
+  Joi.object({
+    name: Joi.string()
+      .trim()
+      .max(100)
+      .messages({
+        "string.empty":
+          "Name cannot be empty",
+
+        "string.max":
+          "Name cannot exceed 100 characters",
+      }),
+
+    email: Joi.string()
+      .trim()
+      .lowercase()
+      .email()
+      .messages({
+        "string.empty":
+          "Email cannot be empty",
+
+        "string.email":
+          "Please enter a valid email",
+      }),
+
+    password: Joi.string()
+      .min(8)
+      .messages({
+        "string.empty":
+          "Password cannot be empty",
+
+        "string.min":
+          "Password must be at least 8 characters",
+      }),
+
+    phone: Joi.string()
+      .trim()
+      .allow(""),
+
+    avatar: Joi.string()
+      .uri()
+      .allow(""),
+  });
+
