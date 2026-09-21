@@ -83,7 +83,16 @@ export const getMe = asyncHandler(async (req, res) => {
 // =========================================
 
 export const updateMe = asyncHandler(async (req, res) => {
-  const user = await userService.updateUserProfile(req.user.id, req.body);
+  const updates = { ...req.body };
+
+  if (req.file) {
+    const result = await uploadBufferToCloudinary(req.file.buffer, "avatars");
+
+    updates.avatar = result.secure_url;
+    updates.avatarPublicId = result.public_id;
+  }
+
+  const user = await userService.updateUserProfile(req.user.id, updates);
 
   return apiResponse(res, 200, "Profile updated successfully", {
     user,

@@ -259,25 +259,11 @@ export const resetPasswordSchema =
 // UPDATE PROFILE
 // =========================================
 
-export const updateUserSchema =
-  Joi.object({
-    name: Joi.string()
-      .trim()
-      .max(100),
-
-    phone: Joi.string()
-      .trim()
-      .allow(""),
-
-    avatar: Joi.string()
-      .uri()
-      .allow(""),
-  })
-    .min(1)
-    .messages({
-      "object.min":
-        "At least one field is required to update",
-    });
+export const updateUserSchema = Joi.object({
+  name: Joi.string().trim().max(100),
+  phone: Joi.string().trim().allow(""),
+  avatar: Joi.string().uri().allow(""),
+});
 
 
 // =========================================

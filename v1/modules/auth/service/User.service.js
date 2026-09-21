@@ -312,7 +312,7 @@ export const getUserById = async (userId) => {
 // =========================================
 
 export const updateUserProfile = async (userId, updates) => {
-  const allowedFields = ["name", "phone", "avatar"];
+  const allowedFields = ["name", "phone", "avatar", "avatarPublicId"]; 
 
   const filteredUpdates = {};
 
@@ -322,13 +322,22 @@ export const updateUserProfile = async (userId, updates) => {
     }
   });
 
-  const user = await User.findByIdAndUpdate(userId, filteredUpdates, {
-    new: true,
-    runValidators: true,
-  });
+  const user = await User.findById(userId).select("+avatarPublicId");
 
   if (!user) {
+    if (filteredUpdates.avatarPublicId) {
+      await deleteFromCloudinary(filteredUpdates.avatarPublicId); // rollback
+    }
     throw new AppError("User not found", 404);
+  }
+
+  const oldAvatarPublicId = user.avatarPublicId;
+
+  Object.assign(user, filteredUpdates);
+  await user.save({ validateBeforeSave: true });
+
+  if (filteredUpdates.avatarPublicId && oldAvatarPublicId) {
+    await deleteFromCloudinary(oldAvatarPublicId);
   }
 
   return user;

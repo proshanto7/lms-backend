@@ -126,6 +126,7 @@ router.get(
 router.patch(
   "/me",
   authorize,
+  uploadAvatar,
   validate(updateUserSchema),
   userController.updateMe
 );
