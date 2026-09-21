@@ -1,7 +1,7 @@
 import Enrollment from "../model/enrollment.model.js";
 import Course from "../../courses/model/courses.model.js";
 import User from "../../auth/model/user.model.js";
-import AppError from "../../../utils/appError.js";
+import AppError from "../../../utils/Apperror.js";
 
 /**
  * Admin: enroll a student in a course

@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 import User from "../model/user.model.js";
 import Course from "../../courses/model/courses.model.js";
-import AppError from "../../../utils/appError.js";
+import AppError from "../../../utils/Apperror.js";
 import { sendEmail } from "../../../helpers/sendEmail.js";
 import { deleteFromCloudinary } from "../../../utils/cloudinaryUpload.js";
 

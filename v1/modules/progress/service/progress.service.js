@@ -1,7 +1,7 @@
 import Progress from "../model/progress.model.js";
 import Lesson from "../../lesson/model/lesson.model.js";
 import Course from "../../courses/model/courses.model.js";
-import AppError from "../../../utils/appError.js";
+import AppError from "../../../utils/Apperror.js";
 import { hasActiveAccess } from "../../enrollment/service/enrollment.service.js";
 
 /**

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import Course from "../model/courses.model.js";
 import Category from "../../categories/model/category.model.js";
 import User from "../../auth/model/user.model.js";                                  
-import AppError from "../../../utils/appError.js";
+import AppError from "../../../utils/Apperror.js";
 import { deleteFromCloudinary } from "../../../utils/cloudinaryUpload.js";
 
 const buildSlug = (title) =>

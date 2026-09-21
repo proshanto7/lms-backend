@@ -1,6 +1,6 @@
 import Category from "../model/category.model.js";
 import Course from "../../courses/model/courses.model.js";
-import AppError from "../../../utils/appError.js";
+import AppError from "../../../utils/Apperror.js";
 import { deleteFromCloudinary } from "../../../utils/cloudinaryUpload.js";
 
 const buildSlug = (name) =>

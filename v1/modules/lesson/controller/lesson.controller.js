@@ -1,6 +1,6 @@
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { apiResponse } from "../../../utils/apiResponse.js";
-import AppError from "../../../utils/appError.js";
+import AppError from "../../../utils/Apperror.js";
 import * as lessonService from "../service/lesson.service.js";
 import { uploadBufferToCloudinary } from "../../../utils/cloudinaryUpload.js";
 

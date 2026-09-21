@@ -1,6 +1,6 @@
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { apiResponse } from "../../../utils/apiResponse.js";
-import AppError from "../../../utils/appError.js";
+import AppError from "../../../utils/Apperror.js";
 import { sendTokenResponse } from "../../../utils/Generatetoken.js";
 import { uploadBufferToCloudinary } from "../../../utils/cloudinaryUpload.js";
 
