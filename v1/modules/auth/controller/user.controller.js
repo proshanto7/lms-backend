@@ -242,6 +242,27 @@ export const updateUserRole = asyncHandler(async (req, res) => {
   });
 });
 
+// =========================================
+// 🆕 UPDATE USER STATUS (isActive true/false)
+// =========================================
+
+export const updateUserStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const { isActive } = req.body;
+
+  const user = await userService.updateUserStatus(id, isActive, req.user.id);
+
+  return apiResponse(
+    res,
+    200,
+    `User ${isActive ? "activated" : "deactivated"} successfully`,
+    {
+      user,
+    },
+  );
+});
+
 // =========================================================
 // 🆕 ADMIN: CREATE / UPDATE / DELETE USER (mentor)
 // =========================================================

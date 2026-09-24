@@ -312,7 +312,7 @@ export const getUserById = async (userId) => {
 // =========================================
 
 export const updateUserProfile = async (userId, updates) => {
-  const allowedFields = ["name", "phone", "avatar", "avatarPublicId"]; 
+  const allowedFields = ["name", "phone", "avatar", "avatarPublicId"];
 
   const filteredUpdates = {};
 
@@ -443,6 +443,34 @@ export const updateUserRole = async (userId, role) => {
     userId,
     {
       role,
+    },
+    {
+      new: true,
+    },
+  );
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  return user;
+};
+
+// =========================================
+// 🆕 Update User Status (isActive true/false)
+// =========================================
+
+export const updateUserStatus = async (userId, isActive, requestUserId) => {
+  // Admin nijeke deactivate korte parbe na (accidentally nijer access hariye
+  // felte pare)
+  if (requestUserId && String(userId) === String(requestUserId) && !isActive) {
+    throw new AppError("You cannot deactivate your own account", 400);
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      isActive,
     },
     {
       new: true,

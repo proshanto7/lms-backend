@@ -1,19 +1,14 @@
 import express from "express";
 
-import * as userController
-  from "../controller/user.controller.js";
+import * as userController from "../controller/user.controller.js";
 
-import UploadMiddleware
-  from "../../../middleware/upload.middleware.js";
+import UploadMiddleware from "../../../middleware/upload.middleware.js";
 
-import { authorize }
-  from "../../../middleware/authorize.js";
+import { authorize } from "../../../middleware/authorize.js";
 
-import { authorizeRole }
-  from "../../../middleware/authorizeRole.js";
+import { authorizeRole } from "../../../middleware/authorizeRole.js";
 
-import { validate }
-  from "../../../middleware/validate.middleware.js";
+import { validate } from "../../../middleware/validate.middleware.js";
 
 import {
   registerSchema,
@@ -26,38 +21,28 @@ import {
   verifyEmailSchema,
   resendVerificationSchema,
   verifyResetOtpSchema,
-  createUserSchema,          // 🆕 admin: user create
-  updateUserByAdminSchema,   // 🆕 admin: user edit
+  createUserSchema, // 🆕 admin: user create
+  updateUserByAdminSchema, // 🆕 admin: user edit
+  updateStatusSchema, // 🆕 admin: user active/inactive
 } from "../validation/user.validation.js";
 
-
 const router = express.Router();
-
 
 // =========================================
 // 🆕 Avatar Upload (category icon er moto: UploadMiddleware → Cloudinary)
 // =========================================
 
-const uploadAvatar = UploadMiddleware(["jpg", "png", "webp"], 2).single("avatar");
-
+const uploadAvatar = UploadMiddleware(["jpg", "png", "webp"], 2).single(
+  "avatar",
+);
 
 // =========================================
 // PUBLIC ROUTES
 // =========================================
 
-router.post(
-  "/register",
-  validate(registerSchema),
-  userController.register
-);
+router.post("/register", validate(registerSchema), userController.register);
 
-
-router.post(
-  "/login",
-  validate(loginSchema),
-  userController.login
-);
-
+router.post("/login", validate(loginSchema), userController.login);
 
 // =========================================
 // Email Verification
@@ -66,16 +51,14 @@ router.post(
 router.post(
   "/verify-email",
   validate(verifyEmailSchema),
-  userController.verifyEmail
+  userController.verifyEmail,
 );
-
 
 router.post(
   "/resend-verification",
   validate(resendVerificationSchema),
-  userController.resendVerification
+  userController.resendVerification,
 );
-
 
 // =========================================
 // Forgot Password
@@ -85,90 +68,71 @@ router.post(
 router.post(
   "/forgot-password",
   validate(forgotPasswordSchema),
-  userController.forgotPassword
+  userController.forgotPassword,
 );
-
 
 // Step 2: Email + OTP → Reset Token
 router.post(
   "/verify-reset-otp",
   validate(verifyResetOtpSchema),
-  userController.verifyResetOtp
+  userController.verifyResetOtp,
 );
-
 
 // Step 3: Reset Token + New Password
 router.post(
   "/reset-password",
   validate(resetPasswordSchema),
-  userController.resetPassword
+  userController.resetPassword,
 );
-
 
 // =========================================
 // PROTECTED ROUTES
 // =========================================
 
-router.post(
-  "/logout",
-  authorize,
-  userController.logout
-);
+router.post("/logout", authorize, userController.logout);
 
-
-router.get(
-  "/me",
-  authorize,
-  userController.getMe
-);
-
+router.get("/me", authorize, userController.getMe);
 
 router.patch(
   "/me",
   authorize,
   uploadAvatar,
   validate(updateUserSchema),
-  userController.updateMe
+  userController.updateMe,
 );
-
 
 router.patch(
   "/change-password",
   authorize,
   validate(changePasswordSchema),
-  userController.changePassword
+  userController.changePassword,
 );
 
-
-router.delete(
-  "/me",
-  authorize,
-  userController.deactivateMe
-);
-
+router.delete("/me", authorize, userController.deactivateMe);
 
 // =========================================
 // ADMIN ROUTES
 // =========================================
-// NOTE: "/:id" wala route gula shobar niche thakte hobe,
-// na hole "/me" ke "/:id" hishebe dhore felbe.
+// NOTE: "/:id"
 
-router.get(
-  "/",
-  authorize,
-  authorizeRole("admin"),
-  userController.getAllUsers
-);
-
+router.get("/", authorize, authorizeRole("admin"), userController.getAllUsers);
 
 router.patch(
   "/:id/role",
   authorize,
   authorizeRole("admin"),
   validate(updateRoleSchema),
-  userController.updateUserRole
+  userController.updateUserRole,
 );
 
+// 🆕 Admin: user active/inactive (isActive) toggle
+router.patch(
+  "/:id/status",
+  authorize,
+  authorizeRole("admin"),
+  validate(updateStatusSchema),
+  userController.updateUserStatus,
+);
 
 // 🆕 Admin: notun user (mentor) create + optional avatar image
 // uploadAvatar ageh thakte hobe, tahole validate() req.body dekhte pay
@@ -178,9 +142,8 @@ router.post(
   authorizeRole("admin"),
   uploadAvatar,
   validate(createUserSchema),
-  userController.createUser
+  userController.createUser,
 );
-
 
 // 🆕 Admin: user edit (name, email, optional password, optional avatar image)
 router.patch(
@@ -189,17 +152,15 @@ router.patch(
   authorizeRole("admin"),
   uploadAvatar,
   validate(updateUserByAdminSchema),
-  userController.updateUser
+  userController.updateUser,
 );
-
 
 // 🆕 Admin: mentor delete
 router.delete(
   "/:id",
   authorize,
   authorizeRole("admin"),
-  userController.deleteUser
+  userController.deleteUser,
 );
-
 
 export default router;
