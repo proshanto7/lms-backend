@@ -3,6 +3,7 @@ import Course from "../../courses/model/courses.model.js";
 import Category from "../../categories/model/category.model.js";
 import Enrollment from "../../enrollment/model/enrollment.model.js";
 import Lesson from "../../lesson/model/lesson.model.js";
+import EnrollmentRequest from "../../enrollment-request/model/enrollmentRequest.model.js";
 
 /**
  * Overview cards — total counts for the dashboard homepage
@@ -15,6 +16,7 @@ export const getOverviewStats = async () => {
     totalCategories,
     totalActiveEnrollments,
     totalLessons,
+    pendingEnrollmentRequests,
   ] = await Promise.all([
     User.countDocuments({ role: "student", isActive: true }),
     User.countDocuments({ role: "mentor", isActive: true }),
@@ -22,6 +24,7 @@ export const getOverviewStats = async () => {
     Category.countDocuments(),
     Enrollment.countDocuments({ status: "active" }),
     Lesson.countDocuments(),
+    EnrollmentRequest.countDocuments({ status: "pending" }),
   ]);
 
   // estimated revenue = sum of course price for each active enrollment
@@ -54,7 +57,22 @@ export const getOverviewStats = async () => {
     totalActiveEnrollments,
     totalLessons,
     totalRevenue,
+    pendingEnrollmentRequests,
   };
+};
+
+/**
+ * Pending enrollment requests — students waiting on admin approval.
+ * This is what the dashboard's "enroll a student" action list is driven from.
+ */
+export const getPendingEnrollmentRequests = async () => {
+  const requests = await EnrollmentRequest.find({ status: "pending" })
+    .populate("student", "name email avatar")
+    .populate("course", "title slug image price isFree")
+    .sort({ createdAt: -1 })
+    .limit(10);
+
+  return requests;
 };
 
 /**
@@ -141,12 +159,14 @@ export const getEnrollmentTrend = async () => {
  * Combined dashboard payload — one call, everything the homepage needs
  */
 export const getDashboardSummary = async () => {
-  const [overview, recentEnrollments, topCourses, enrollmentTrend] = await Promise.all([
-    getOverviewStats(),
-    getRecentEnrollments(),
-    getTopCourses(),
-    getEnrollmentTrend(),
-  ]);
+  const [overview, recentEnrollments, topCourses, enrollmentTrend, pendingEnrollmentRequests] =
+    await Promise.all([
+      getOverviewStats(),
+      getRecentEnrollments(),
+      getTopCourses(),
+      getEnrollmentTrend(),
+      getPendingEnrollmentRequests(),
+    ]);
 
-  return { overview, recentEnrollments, topCourses, enrollmentTrend };
+  return { overview, recentEnrollments, topCourses, enrollmentTrend, pendingEnrollmentRequests };
 };
