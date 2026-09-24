@@ -20,7 +20,10 @@ export const enrollStudent = async ({ studentId, courseId, adminId }) => {
     throw new AppError("Course not found", 404);
   }
 
-  const existing = await Enrollment.findOne({ student: studentId, course: courseId });
+  const existing = await Enrollment.findOne({
+    student: studentId,
+    course: courseId,
+  });
   if (existing) {
     if (existing.status === "active") {
       throw new AppError("Student is already enrolled in this course", 409);
@@ -29,6 +32,10 @@ export const enrollStudent = async ({ studentId, courseId, adminId }) => {
     existing.status = "active";
     existing.enrolledBy = adminId;
     await existing.save();
+
+    await Course.findByIdAndUpdate(courseId, {
+      $inc: { students: 1 },
+    });
     return existing;
   }
 
@@ -54,7 +61,15 @@ export const revokeEnrollment = async (enrollmentId) => {
   }
 
   if (enrollment.status === "active") {
-    await Course.findByIdAndUpdate(enrollment.course, { $inc: { students: -1 } });
+    await Course.findOneAndUpdate(
+      {
+        _id: enrollment.course,
+        students: { $gt: 0 },
+      },
+      {
+        $inc: { students: -1 },
+      },
+    );
   }
 
   enrollment.status = "revoked";
@@ -67,10 +82,10 @@ export const revokeEnrollment = async (enrollmentId) => {
  * Get all enrollments for a course (admin view)
  */
 export const getCourseEnrollments = async (courseId) => {
-  const enrollments = await Enrollment.find({ course: courseId, status: "active" }).populate(
-    "student",
-    "name email avatar"
-  );
+  const enrollments = await Enrollment.find({
+    course: courseId,
+    status: "active",
+  }).populate("student", "name email avatar");
   return enrollments;
 };
 
@@ -78,10 +93,10 @@ export const getCourseEnrollments = async (courseId) => {
  * Get logged-in student's own enrollments
  */
 export const getMyEnrollments = async (studentId) => {
-  const enrollments = await Enrollment.find({ student: studentId, status: "active" }).populate(
-    "course",
-    "title slug image price level"
-  );
+  const enrollments = await Enrollment.find({
+    student: studentId,
+    status: "active",
+  }).populate("course", "title slug image price level");
   return enrollments;
 };
 
@@ -101,7 +116,10 @@ export const hasActiveAccess = async (studentId, courseId) => {
  * Get all active enrollments for a specific student (admin view)
  */
 export const getStudentEnrollments = async (studentId) => {
-  const enrollments = await Enrollment.find({ student: studentId, status: "active" })
+  const enrollments = await Enrollment.find({
+    student: studentId,
+    status: "active",
+  })
     .populate("course", "title slug price isFree image")
     .sort({ createdAt: -1 });
 
