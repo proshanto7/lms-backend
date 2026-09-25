@@ -90,14 +90,16 @@ export const updateCategory = asyncHandler(async (req, res) => {
 
   return apiResponse(res, 200, "Category updated successfully", { category });
 });
+
 /**
  * @route   DELETE /api/v1/categories/:id
  * @access  Private (authorize + authorizeRole('admin'))
  */
 export const deleteCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const force = req.query.force === "true";
 
-  await categoryService.deleteCategory(id);
+  await categoryService.deleteCategory(id, force);
 
   return apiResponse(res, 200, "Category deleted successfully", null);
 });

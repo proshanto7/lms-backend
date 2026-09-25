@@ -15,8 +15,8 @@ const buildSlug = (name) =>
  */
 const attachCourseCounts = async (categories) => {
   const counts = await Course.aggregate([
-    { $match: { categoryId: { $in: categories.map((c) => c._id) } } },
-    { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+    { $match: { category: { $in: categories.map((c) => c._id) } } },
+    { $group: { _id: "$category", count: { $sum: 1 } } },
   ]);
 
   const countMap = counts.reduce((acc, item) => {
@@ -75,7 +75,7 @@ export const getCategoryById = async (categoryId) => {
     throw new AppError("Category not found", 404);
   }
 
-  const courseCount = await Course.countDocuments({ categoryId: category._id });
+  const courseCount = await Course.countDocuments({ category: category._id });
 
   return { ...category.toObject(), courseCount };
 };
@@ -86,7 +86,7 @@ export const getCategoryBySlug = async (slug) => {
     throw new AppError("Category not found", 404);
   }
 
-  const courseCount = await Course.countDocuments({ categoryId: category._id });
+  const courseCount = await Course.countDocuments({ category: category._id });
 
   return { ...category.toObject(), courseCount };
 };
@@ -136,24 +136,39 @@ export const updateCategory = async (categoryId, updates) => {
 
   return category;
 };
-
 /**
- * Delete category — blocked if any course still references it; also removes Cloudinary image
+ * Delete category — blocked unless force=true if courses are linked;
+ * with force=true, cascade deletes all linked courses too
  */
-export const deleteCategory = async (categoryId) => {
-  const courseCount = await Course.countDocuments({ categoryId });
-  if (courseCount > 0) {
-    throw new AppError(
-      `Cannot delete category: ${courseCount} course(s) still linked to it`,
-      409
-    );
-  }
-
-  const category = await Category.findByIdAndDelete(categoryId);
+export const deleteCategory = async (categoryId, force = false) => {
+  const category = await Category.findById(categoryId);
   if (!category) {
     throw new AppError("Category not found", 404);
   }
 
+  const linkedCourses = await Course.find({ category: categoryId });
+
+  if (linkedCourses.length > 0 && !force) {
+    throw new AppError(
+      `Cannot delete category: ${linkedCourses.length} course(s) still linked to it. Pass force=true to delete them as well.`,
+      409
+    );
+  }
+
+  if (linkedCourses.length > 0) {
+    // proti course er cloudinary image delete kora
+    await Promise.all(
+      linkedCourses.map((course) => deleteFromCloudinary(course.image?.publicId))
+    );
+
+    // sob course delete kora
+    await Course.deleteMany({ category: categoryId });
+  }
+
+  // category ta delete kora
+  await Category.findByIdAndDelete(categoryId);
+
+  // category er icon o cloudinary theke delete kora
   await deleteFromCloudinary(category.icon?.publicId);
 
   return category;
