@@ -82,13 +82,25 @@ export const getAllCourses = async ({
 }) => {
   const filter = {};
 
-  if (search) filter.title = { $regex: search, $options: "i" };
+  if (search) {
+    // title e সরাসরি match, plus category name / instructor name match kore
+    // sheigulor id বের kore $or diye jog kora
+    const [matchingCategories, matchingInstructors] = await Promise.all([
+      Category.find({ name: { $regex: search, $options: "i" } }).select("_id"),
+      User.find({ name: { $regex: search, $options: "i" } }).select("_id"),
+    ]);
+
+    filter.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { category: { $in: matchingCategories.map((c) => c._id) } },
+      { instructor: { $in: matchingInstructors.map((u) => u._id) } },
+    ];
+  }
+
   if (category) filter.category = category;
   if (level) filter.level = level;
-  if (isFree !== undefined)
-    filter.isFree = isFree === "true" || isFree === true;
-  if (isPublished !== undefined)
-    filter.isPublished = isPublished === "true" || isPublished === true;
+  if (isFree !== undefined) filter.isFree = isFree === "true" || isFree === true;
+  if (isPublished !== undefined) filter.isPublished = isPublished === "true" || isPublished === true;
 
   if (minPrice || maxPrice) {
     filter.price = {};
