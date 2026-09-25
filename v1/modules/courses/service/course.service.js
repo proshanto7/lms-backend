@@ -1,7 +1,6 @@
-import mongoose from "mongoose";
 import Course from "../model/courses.model.js";
 import Category from "../../categories/model/category.model.js";
-import User from "../../auth/model/user.model.js";                                  
+import User from "../../auth/model/user.model.js";
 import AppError from "../../../utils/Apperror.js";
 import { deleteFromCloudinary } from "../../../utils/cloudinaryUpload.js";
 
@@ -32,7 +31,10 @@ const assertValidInstructor = async (instructorId) => {
     throw new AppError("Instructor not found", 404);
   }
   if (!["mentor", "admin"].includes(instructor.role)) {
-    throw new AppError("Selected user is not authorized to be an instructor", 400);
+    throw new AppError(
+      "Selected user is not authorized to be an instructor",
+      400,
+    );
   }
   return instructor;
 };
@@ -53,12 +55,17 @@ export const createCourse = async (payload) => {
   }
 
   const course = await Course.create(payload);
+
+  // category er courses array e new course id push kora
+  await Category.findByIdAndUpdate(course.category, {
+    $addToSet: { courses: course._id },
+  });
+
   return course.populate([
     { path: "category", select: "name slug color icon" },
     { path: "instructor", select: "name email avatar role" },
   ]);
 };
-
 /**
  * Get all courses — with filters, search, pagination
  */
@@ -78,8 +85,10 @@ export const getAllCourses = async ({
   if (search) filter.title = { $regex: search, $options: "i" };
   if (category) filter.category = category;
   if (level) filter.level = level;
-  if (isFree !== undefined) filter.isFree = isFree === "true" || isFree === true;
-  if (isPublished !== undefined) filter.isPublished = isPublished === "true" || isPublished === true;
+  if (isFree !== undefined)
+    filter.isFree = isFree === "true" || isFree === true;
+  if (isPublished !== undefined)
+    filter.isPublished = isPublished === "true" || isPublished === true;
 
   if (minPrice || maxPrice) {
     filter.price = {};
@@ -201,6 +210,19 @@ export const updateCourse = async (courseId, updates) => {
     await deleteFromCloudinary(existingCourse.image.publicId);
   }
 
+  // category change hoile old category theke remove and new category te add
+  if (
+    filteredUpdates.category &&
+    filteredUpdates.category.toString() !== existingCourse.category.toString()
+  ) {
+    await Category.findByIdAndUpdate(existingCourse.category, {
+      $pull: { courses: existingCourse._id },
+    });
+    await Category.findByIdAndUpdate(filteredUpdates.category, {
+      $addToSet: { courses: existingCourse._id },
+    });
+  }
+
   const course = await Course.findByIdAndUpdate(courseId, filteredUpdates, {
     new: true,
     runValidators: true,
@@ -219,6 +241,11 @@ export const deleteCourse = async (courseId) => {
   if (!course) {
     throw new AppError("Course not found", 404);
   }
+
+  // category er courses array theke ei course id remove kora
+  await Category.findByIdAndUpdate(course.category, {
+    $pull: { courses: course._id },
+  });
 
   await deleteFromCloudinary(course.image?.publicId);
 
