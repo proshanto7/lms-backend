@@ -24,18 +24,33 @@ const ensureCloudinaryConfig = () => {
 /**
  * Upload a file buffer (from multer memoryStorage) to Cloudinary
  * resourceType: "image" | "video"
+ *
+ * Video-r jonno normal upload_stream() use korle Cloudinary-r nijer
+ * default ~60s timeout-e pore jay (boro file / slow connection-e).
+ * upload_chunked_stream() file-ta choto chunk-e bhag kore pathay,
+ * tai ekta shingle request-er upor 60s limit-e atke thake na.
  */
 export const uploadBufferToCloudinary = (buffer, folder, resourceType = "image") => {
   ensureCloudinaryConfig();
 
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: resourceType },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
-      }
-    );
+    const isVideo = resourceType === "video";
+
+    const uploadOptions = {
+      folder,
+      resource_type: resourceType,
+      ...(isVideo && { chunk_size: 6_000_000 }), // 6MB por chunk
+    };
+
+    const callback = (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    };
+
+    const stream = isVideo
+      ? cloudinary.uploader.upload_chunked_stream(uploadOptions, callback)
+      : cloudinary.uploader.upload_stream(uploadOptions, callback);
+
     streamifier.createReadStream(buffer).pipe(stream);
   });
 };
